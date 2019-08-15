@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html><head>
+	<title>Maze Maker</title>
+	<meta charset="UTF-8">
+	<style>
+		fieldset {display:block;margin:0 0 .5em; border:2px groove #999;background:#999; padding:0 .3em .3em}
+		legend {font-size:80%; padding:0 .5em; background:#aaa; border:2px groove #999; cursor:pointer}
+		table {display:inline-table;border-collapse:collapse}
+		button {padding:.2em 2em}
+		.exits td {width:15px;height:15px;padding:0}
+		.exits td input {margin:0;display:block}
+		.exits td:nth-child(2n) {width:40px}
+		.exits tr:nth-child(2n) td {height:15px}
+		#analysis td+td {text-align:right;padding-left:1em}
+		input[type=color] {padding:0;border:1px solid black}
+		input[type=color]:disabled {opacity:.5}
+		input[type=number] {text-align:right}
+		#configs button {padding:0;border:1px solid black;width:100%}
+	</style>
+</head><body style="background:#888;white-space:nowrap;display:flex;flex-direction:row;margin:0;height:100vh;font-family:sans-serif;font-size:90%">
+
+<div id="counter" style="padding:.5em 1em;position:absolute;right:0;bottom:0;font-weight:bold;background:#ccc;opacity:.8;pointer-events:none"></div>
+<div id="analysis" style="padding:1em;position:absolute;right:0;top:0;background:#ccc;opacity:.9;font-family:monospace;display:none;border-bottom-left-radius:1em;border-left:1px solid black;border-bottom:1px solid black"></div>
+
+<div style="overflow-y:scroll;scrollbar-width:thin;padding:.5em .5em 0">
+
+	<fieldset><legend>Maze Size</legend>
+	<table><tr>
+		<td align="right">Width:</td>
+		<td><input id="width1"  type="range"  min="1" max="1500" oninput="setWidth1()" value="250" style="width:8em" tabindex="-1"></td>
+		<td><input id="width2"  type="number" min="1" max="1500" oninput="setWidth2()" value="250" style="width:4em" required></td>
+	</tr><tr>
+		<td align="right">Height:</td>
+		<td><input id="height1" type="range"  min="1" max="1500" oninput="setHeight1()" value="150" style="width:8em" tabindex="-1"></td>
+		<td><input id="height2" type="number" min="1" max="1500" oninput="setHeight2()" value="150" style="width:4em" required></td>
+	</tr></table>
+	</fieldset>
+
+	<fieldset><legend>Drawing Size</legend>
+	<table><tr>
+		<td align="right">Cell Size:</td>
+		<td><input id="sizeN1" type="range"  min="1" max="10" onchange="setSizeN1()" value="3" style="width:8em" tabindex="-1"></td>
+		<td><input id="sizeN2" type="number" min="1" max="10" onchange="setSizeN2()" value="3" style="width:3em" required></td>
+	</tr><tr>
+		<td align="right">Wall Size:</td>
+		<td><input id="sizeW1" type="range"  min="1" max="10" onchange="setSizeW1()" value="1" style="width:8em" tabindex="-1"></td>
+		<td><input id="sizeW2" type="number" min="1" max="10" onchange="setSizeW2()" value="1" style="width:3em" required></td>
+	</tr></table>
+	</fieldset>
+
+	<fieldset><legend>Algorithm</legend>
+	<table><tr>
+		<td align="right">Method:</td>
+		<td colspan="2"><select id="method" onchange="setMethod()" style="min-width:10em"></select></td>
+	</tr><tr id="trgrow">
+		<td align="right">Growths:</td>
+		<td><input id="grow1" type="range"  min="2" max="10" oninput="setGrow1()" value="3" style="width:6em" tabindex="-1"></td>
+		<td><input id="grow2" type="number" min="2" max="10" oninput="setGrow2()" value="3" style="width:4em" required></td>
+	</tr><tr id="trsame">
+		<td align="right">Config:</td>
+		<td colspan="2"><select id="same" onchange="setSame()" style="min-width:10em"><option value="1">All the same</option><option value="0">Different</option></select></td>
+	</tr><tr id="trconf">
+		<td colspan="4"><div style="display:flex" id="configs">
+			<button onclick="clickConfig(0,event.shiftKey)">1</button>
+			<button onclick="clickConfig(1,event.shiftKey)">2</button>
+			<button onclick="clickConfig(2,event.shiftKey)">3</button>
+			<button onclick="clickConfig(3,event.shiftKey)">4</button>
+			<button onclick="clickConfig(4,event.shiftKey)">5</button>
+			<button onclick="clickConfig(5,event.shiftKey)">6</button>
+			<button onclick="clickConfig(6,event.shiftKey)">7</button>
+			<button onclick="clickConfig(7,event.shiftKey)">8</button>
+			<button onclick="clickConfig(8,event.shiftKey)">9</button>
+			<button onclick="clickConfig(9,event.shiftKey)">10</button>
+		</div></td>
+	</tr><tr id="trbeg">
+		<td align="right">Begin at:</td>
+		<td colspan="2"><select id="begin" style="min-width:10em">
+			<option value="11">Top Left</option>
+			<option value="21">Top</option>
+			<option value="31">Top Right</option>
+			<option value="12">Left</option>
+			<option value="22" selected>Center</option>
+			<option value="32">Right</option>
+			<option value="13">Bottom Left</option>
+			<option value="23">Bottom</option>
+			<option value="33">Bottom Right</option>
+			<option value="0">Random</option>
+		</select></td>
+	</tr><tr id="trcho">
+		<td align="right" title="How to choose from where to grow">Choose:</td>
+		<td colspan="2"><select id="choose" onchange="setChoose()" style="min-width:10em">
+			<option value="1">First</option>
+			<option value="2">Second</option>
+			<option value="M">Middle</option>
+			<option value="O">Oldest</option>
+			<option value="R">Random</option>
+			<option value="*">Multiple</option>
+		</select><br><table id="chomulti" style="margin-bottom:.5em">
+			<tr><td>First: </td><td><input id="chomul1" type="number" min="0" max="100" value="1" style="width:4em" required onchange="setMulti()"></td></tr>
+			<tr><td>Second:</td><td><input id="chomul2" type="number" min="0" max="100" value="0" style="width:4em" required onchange="setMulti()"></td></tr>
+			<tr><td>Middle:</td><td><input id="chomulM" type="number" min="0" max="100" value="0" style="width:4em" required onchange="setMulti()"></td></tr>
+			<tr><td>Oldest:</td><td><input id="chomulO" type="number" min="0" max="100" value="0" style="width:4em" required onchange="setMulti()"></td></tr>
+			<tr><td>Random:</td><td><input id="chomulR" type="number" min="0" max="100" value="1" style="width:4em" required onchange="setMulti()"></td></tr>
+		</table></td>
+	</tr><tr id="trrate">
+		<td align="right" title="How fast does this grow">Rate:</td>
+		<td><input id="rate1" type="range"  min="1" max="50" oninput="setRate1()" value="1" style="width:6em" tabindex="-1"></td>
+		<td><input id="rate2" type="number" min="1" max="50" oninput="setRate2()" value="1" style="width:4em" required></td>
+	</tr><tr id="trord">
+		<td align="right">Order:</td>
+		<td colspan="2"><select id="ordering" onchange="setOrdering()">
+			<option value="R">Random</option>
+			<option value="S">Sequential</option>
+		</select></td>
+	</tr><tr id="trcut">
+		<td align="right">Cut across:</td>
+		<td colspan="2"><select id="cut" onchange="setCut()" style="min-width:10em">
+			<option value="L">Longest</option>
+			<option value="P">Proportional</option>
+			<option value="R">Random</option>
+		</select></td>
+	</tr><tr id="trcwh">
+		<td align="right">Cut where:</td>
+		<td colspan="2"><select id="cwhere" onchange="setCwhere()" style="min-width:10em">
+			<option value="1">Random</option>
+			<option value="3">Favor Center</option>
+			<option value="6">Favor Center More</option>
+			<option value="C">Center</option>
+		</select></td>
+	</tr><tr id="trwrk">
+		<td align="right">Show work:</td>
+		<td colspan="2"><select id="work" onchange="setWork()" style="min-width:10em">
+			<option value="0">No</option>
+			<option value="1">Yes</option>
+			<option value="2">Yeeeees</option>
+		</select></td>
+	</tr><tr id="trkeep">
+		<td align="right" title="Chance to keep using the cell same for growing">Keep:</td>
+		<td><input id="keep1" type="range"  min="0" max="100" oninput="setKeep1()" value="0" style="width:6em" tabindex="-1"></td>
+		<td><input id="keep2" type="number" min="0" max="100" oninput="setKeep2()" value="0" style="width:4em" required>%</td>
+	</tr><tr id="trnox">
+		<td align="right" title="Chance to avoid producing a crossroad">No Xroads:</td>
+		<td><input id="nox1" type="range"  min="0" max="100" oninput="setNoX1()" value="0" style="width:6em" tabindex="-1"></td>
+		<td><input id="nox2" type="number" min="0" max="100" oninput="setNoX2()" value="0" style="width:4em" required>%</td>
+	</tr><tr id="trrun">
+		<td align="right" title="Chance to keep using the same direction">Multistep:</td>
+		<td><input id="run1" type="range"  min="0" max="100" oninput="setRun1()" value="0" style="width:6em" tabindex="-1"></td>
+		<td><input id="run2" type="number" min="0" max="100" oninput="setRun2()" value="0" style="width:4em" required>%</td>
+	</tr><tr id="trhch">
+		<td align="right" title="Chance to add an horizontal union">H.Chance:</td>
+		<td><input id="hch1" type="range"  min="0" max="100" oninput="setHch1()" value="50" style="width:6em" tabindex="-1"></td>
+		<td><input id="hch2" type="number" min="0" max="100" oninput="setHch2()" value="50" style="width:4em" required>%</td>
+	</tr><tr id="trvch">
+		<td align="right" title="Chance to add a vertical union">V.Chance:</td>
+		<td><input id="vch1" type="range"  min="0" max="100" oninput="setVch1()" value="50" style="width:6em" tabindex="-1"></td>
+		<td><input id="vch2" type="number" min="0" max="100" oninput="setVch2()" value="50" style="width:4em" required>%</td>
+	</tr><tr id="trfav">
+		<td align="right">Favoritism:</td>
+		<td><input id="fav1" type="range"  min="0" max="99" oninput="setFav1()" value="0" style="width:6em" tabindex="-1"></td>
+		<td><input id="fav2" type="number" min="0" max="99" oninput="setFav2()" value="0" style="width:4em" required>%</td>
+	</tr><tr id="trbias">
+		<td align="right">Bias:</td>
+		<td style="font-family:monospace">&nbsp;V<input id="bias1" type="range" min="-99" max="99" oninput="setBias1()" value="0" style="width:5em;margin:0" tabindex="-1">H&nbsp;</td>
+		<td><input id="bias2" type="number" min="-99" max="99" oninput="setBias2()" value="0" style="width:4em" required></td>
+	</tr></table>
+	</fieldset>
+
+	<fieldset><legend>Randomness</legend>
+	<table><tr>
+		<td align="right">Seed:</td>
+		<td colspan="2">
+			<input id="seed" pattern="[0-9a-fA-F]{16}" maxlength="16" style="text-transform:uppercase;width:12em" oninput="document.getElementById('seedkeep').checked=this.checkValidity()">
+			<input type="checkbox" id="seedkeep" title="Keep">
+		</td>
+	</tr></table>
+	</fieldset>
+
+	<fieldset><legend>Exits</legend>
+	<table class="exits" style="margin:auto;background:black;display:table;margin-bottom:.5em;border-left:2px solid black">
+		<tr><td><input id="ex11" onchange="setExits()" type="checkbox" checked></td><td></td><td><input id="ex21" onchange="setExits()" type="checkbox"></td><td></td><td><input id="ex31" onchange="setExits()" type="checkbox"></td></tr>
+		<tr><td></td></tr>
+		<tr><td><input id="ex12" onchange="setExits()" type="checkbox"></td><td></td><td><input id="ex22" onchange="setExits()" type="checkbox"></td><td></td><td><input id="ex32" onchange="setExits()" type="checkbox"></td></tr>
+		<tr><td></td></tr>
+		<tr><td><input id="ex13" onchange="setExits()" type="checkbox"></td><td></td><td><input id="ex23" onchange="setExits()" type="checkbox"></td><td></td><td><input id="ex33" onchange="setExits()" type="checkbox" checked></td></tr>
+	</table>
+	</fieldset>
+
+	<fieldset><legend>Colors</legend>
+	<table><tr>
+		<td align="right">Path:</td>
+		<td><input type="color" id="colPath" value="#FFFFFF" style="padding:0;width:4em" onchange="clean()"></td>
+		<td width="100%"></td>
+		<td align="right">Dead Ends:</td>
+		<td><input type="color" id="colDead" value="#666666" style="padding:0;width:4em"></td>
+	</tr><tr>
+		<td align="right">Walls:</td>
+		<td><input type="color" id="colWall" value="#000000" style="padding:0;width:4em" onchange="clean()"></td>
+		<td width="100%"></td>
+		<td align="right">Xroads:</td>
+		<td><input type="color" id="colXros" value="#3333FF" style="padding:0;width:4em"></td>
+	</tr><tr>
+		<td id="colWork1" align="right">Work:</td>
+		<td id="colWork2"><input type="color" id="colWork" value="#33CC33" style="padding:0;width:4em"></td>
+		<td width="100%"></td>
+		<td align="right">Solution:</td>
+		<td><input type="color" id="colSolv" value="#FF6666" style="padding:0;width:4em"></td>
+	</tr><tr id="trSwrk">
+		<td align="right">SWrk:</td>
+		<td><input type="color" id="colSwrk" value="#006600" style="padding:0;width:4em"></td>
+	</tr></table>
+	</fieldset>
+
+	<fieldset><legend>Gradient</legend>
+	<table style="width:100%"><tr>
+		<td align="right">From:</td>
+		<td colspan="2"><select id="gradFrom" style="min-width:8em">
+			<option value="P">Paths</option>
+			<option value="E">Exits</option>
+		</select></td>
+	</tr><tr>
+		<td colspan="3" style="text-align:center;position:relative">
+			<small style="position:absolute;left:0">Near</small>
+			<small style="position:absolute;right:0">Far</small>
+			<input id="colGrdN" type="hidden" value="4">
+			<button onclick="set_gradient_colors(-1)" style="border:1px solid black;padding:.1em .7em">&#10134</button>
+			<button onclick="set_gradient_colors(1)" style="border:1px solid black;padding:.1em .7em">&#10133</button>
+		</td>
+	</tr><tr>
+		<td colspan="3" style="text-align:center" onchange="set_gradient_colors()"><div id="colGrds" style="display:flex">
+			<input type="color" value="#FF0000" style="width:100%">
+			<input type="color" value="#FFFF00" style="width:100%">
+			<input type="color" value="#00FF00" style="width:100%">
+			<input type="color" value="#00FFFF" style="width:100%">
+			<input type="color" value="#0000FF" style="width:100%">
+			<input type="color" value="#FF00FF" style="width:100%">
+			<input type="color" value="#FF0000" style="width:100%">
+		</div></td>
+	</tr><tr>
+		<td align="right">Steps:</td>
+		<td><select id="stepsType" onchange="setSteps()">
+			<option value="A">Automatic</option>
+			<option value="F">Fixed-Once</option>
+			<option value="R">Fixed-Repeat</option>
+		</select>
+		</td>
+		<td><input id="steps" type="number" min="0" max="9999" step="1" value="250" style="width:4em" required onchange="setSteps()" maxlength="4"></td>
+	</tr><tr>
+		<td align="right">Gamma:</td>
+		<td><input id="gamma1" type="range"  min="0.2" max="5" step="0.1" oninput="setGamma1()" value="1" style="width:8em" tabindex="-1"></td>
+		<td><input id="gamma2" type="number" min="0.2" max="5" step="0.1" oninput="setGamma2()" value="1" style="width:3em" required></td>
+	</tr></table>
+	</fieldset>
+
+</div>
+
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+	<div style="text-align:center;overflow-x:auto;scrollbar-width:thin">
+		<table><tr>
+			<td>Max. Speed:</td>
+			<td><input id="speed1" type="range"  min="0" max="30" step="0.1" oninput="setSpeed1()" value="5" style="width:12em" tabindex="-1"></td>
+			<td>2^<input id="speed2" type="number" min="0" max="30" step="0.1" oninput="setSpeed2()" value="5" style="width:4em;text-align:left" required></td>
+		</tr></table>
+		<div>
+			<button id="btnZero" onclick="zero()">RESTART</button>
+			<button id="btnPlay" onclick="play()">PLAY</button>
+			<button id="btnStep" onclick="step()">STEP</button>
+		</div>
+		<div id="solvers" style="visibility:hidden">
+			<button onclick="analyze()">ANALYZE</button>
+			<button onclick="gradient()" id="btnGrad">GRADIENT</button>
+			<button onclick="deadend()">DEAD ENDS</button>
+			<button onclick="xroad()">X-ROADS</button>
+			<button onclick="solve()" id="btnSolve">SOLUTIONS</button>
+			<button onclick="clean()" id="btnClean">CLEAR</button>
+		</div>
+	</div>
+
+	<div style="text-align:center;flex:1;overflow:auto">
+		<canvas id="canvas" style="display:inline"></canvas>
+	</div>
+</div>
+
+<script>
+"use strict";
+
+
+// Seedable pseudorandom number generator
+
+// Rand.seed(seed1, seed2) : initializes with two 32-bit integers
+// Rand(p) : returns integer in the  [0,p) interval
+// Rand.avg(p,t) : same as Rand(p), but repeats t times and returns average
+// Rand.shuffle(arr) : shuffles the array elements in-place, also returns array
+var Rand = function(max) {
+	if (!max) return 0;
+
+	// if max is power of 2, this is faster
+	if ((max & (max - 1)) === 0)
+		return (Rand.next_() & (max - 1));
+
+	// unbias, double modulo method
+	let reject = ((-max >>> 0) % max) >>> 0;
+	for (;;) {
+		let num = Rand.next_();
+		if (num >= reject) return (num % max);
+	}
+};
+Rand.avg = function(max,dice) {
+	let t = 0;
+	for (let i=0;i<dice;i++) t += Rand(max);
+	return Math.round(t/dice);
+}
+/// Generate random 32bit integer, using PCG algorithm. http://www.pcg-random.org/
+Rand.next_ = function() {
+	// save current state
+	let oldstate = [ Rand.state_[0], Rand.state_[1] ];
+
+	// advance internal state (multiply by 0x5851f42d4c957f2d, then add 0x14057b7ef767814f)
+	{
+		// separate in 16bit chunks
+		let [HH,HL] = [ Rand.state_[0] >>> 16, Rand.state_[0] & 0xffff ];
+		let [LH,LL] = [ Rand.state_[1] >>> 16, Rand.state_[1] & 0xffff ];
+
+		// javascript can handle correctly up to 53bit numbers, so we do some 48bit math
+		let rH = HH*0x7f2d0000 + HL*0x4c957f2d + LH*0xf42d4c95 + LL*0x5851f42d + 0x14057b7e;
+		let rL = LH*0x7f2d0000 + LL*0x4c957f2d + 0xf767814f;
+
+		// carry
+		rH += (rL / 0x100000000) >>> 0;
+
+		Rand.state_ = [ rH>>>0, rL>>>0 ];
+	}
+
+	// calculate output function, using the old state:
+
+	// xorshifted = ((oldstate >> 18) ^ oldstate) >> 27
+	let xorshifted = [ oldstate[0] >>> 18, ((oldstate[1] >>> 18) | (oldstate[0] << 14)) >>> 0 ];
+	xorshifted[0] = (xorshifted[0] ^ oldstate[0]) >>> 0;
+	xorshifted[1] = (xorshifted[1] ^ oldstate[1]) >>> 0;
+	xorshifted = ((xorshifted[1] >>> 27) | (xorshifted[0] << 5)) >>> 0;
+
+	// rot = oldstate >> 59
+	let rot = oldstate[0] >>> 27;
+	let rot2 = ((-rot >>> 0) & 31) >>> 0;
+
+	return ((xorshifted >>> rot) | (xorshifted << rot2)) >>> 0;
+};
+Rand.seed = function(seedHi, seedLo) {
+	if (seedHi === undefined) {
+		seedHi = (Math.random() * 0xffffffff);
+		seedLo = (Math.random() * 0xffffffff);
+	}
+	seedHi = seedHi >>> 0;
+	seedLo = seedLo >>> 0;
+	Rand.state_ = [ seedHi, seedLo ];
+	Rand.next_();
+
+	seedHi = seedHi.toString(16); while (seedHi.length < 8) seedHi = "0" + seedHi;
+	seedLo = seedLo.toString(16); while (seedLo.length < 8) seedLo = "0" + seedLo;
+	return seedHi + seedLo;
+};
+Rand.shuffle = function(arr) {
+	for (let i = arr.length-1; i>0; i--) {
+		const j = Rand(i+1);
+		[ arr[i],arr[j] ] = [ arr[j],arr[i] ];
+	}
+	return arr;
+}
+
+
+
+var pointCache = new Map;
+function Point(x,y) {
+	let val = (x<<15)+y;
+	let R = pointCache.get(val);
+	if ( R !== undefined ) return R;
+
+	R = [x,y];
+	pointCache.set(val, R);
+	return R;
+}
+
+
+
+var gradientCols;
+var gradSteps;
+var gradStepsType;
+var gradGamma;
+function set_gradient_colors(d=0) {
+	const MaxGrad = 7;
+	let N = +document.getElementById("colGrdN").value + d;
+	if (N < 2) N = 2;
+	if (N > MaxGrad) N = MaxGrad;
+	if (isNaN(N)) N = 2;
+	document.getElementById("colGrdN").value = N;
+
+	let parent = document.getElementById("colGrds");
+	for (let i=0; i<MaxGrad; i++)
+		parent.children[i].style.display = (i < N) ? "" : "none";
+
+	gradientCols = [];
+	for (let i=0; i<N; i++)
+		gradientCols.push( parent.children[i].value.match(/[\w][\w]/g).map(v => parseInt(v,16)) );
+}
+function color_gradient(d,m) {
+	if (gradSteps !== null) {
+		m = (gradientCols.length-1) * (gradSteps+1); // position of last full color
+		if (gradStepsType === "F") {
+			if (d > m) d = m;
+		} else {
+			d = d % ((gradientCols.length) * (gradSteps+1)); // loop length
+		}
+	}
+
+	let bracket_size = m / (gradientCols.length-1);
+	let starts_at = Math.floor(d / bracket_size);
+	let col1 = gradientCols[starts_at];
+	let col2 = gradientCols[starts_at+1];
+	if (col2 === undefined) col2 = gradientCols[0];
+	d -= starts_at * bracket_size;
+	m = bracket_size;
+
+	let C1,C2,C3;
+	if (d === 0) {
+		C1 = col1[0];
+		C2 = col1[1];
+		C3 = col1[2];
+	} else if (d === m) {
+		C1 = col2[0];
+		C2 = col2[1];
+		C3 = col2[2];
+	} else {
+		// gammify
+		if (gradGamma !== 1) {
+			col1 = col1.map( c => Math.pow(c/255,gradGamma)*255 );
+			col2 = col2.map( c => Math.pow(c/255,gradGamma)*255 );
+		}
+
+		// interpolatify
+		C1 = col1[0] + (col2[0]-col1[0])*(d/m);
+		C2 = col1[1] + (col2[1]-col1[1])*(d/m);
+		C3 = col1[2] + (col2[2]-col1[2])*(d/m);
+
+		// ungammify
+		if (gradGamma !== 1)
+			[C1,C2,C3] = [C1,C2,C3].map( c => Math.pow(c/255,1/gradGamma)*255 );
+	}
+
+	return "rgb("+Math.round(C1)+","+Math.round(C2)+","+Math.round(C3)+")";
+}
+
+
+
+
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var xx, yy;
+var SIZECELL;
+var SIZEWALL;
+var speed;
+var exits;
+var cfg = {
+	choose: null,
+	keep: null,
+	noX: null,
+	run: null,
+	bias: null,
+	rate: null,
+};
+var method;
+var growths;
+var ordering;
+var showwork;
+var cut;
+var cutwhere;
+var Hch;
+var Vch;
+var favor;
+
+function setWidth1() {
+	let obj = document.getElementById("width1");
+	document.getElementById("width2").value = obj.value;
+	xx = +obj.value;
+	zero();
+}
+function setWidth2() {
+	let obj = document.getElementById("width2");
+	if (obj.checkValidity())
+		document.getElementById("width1").value = obj.value;
+	setWidth1();
+}
+
+function setHeight1() {
+	let obj = document.getElementById("height1");
+	document.getElementById("height2").value = obj.value;
+	yy = +obj.value;
+	zero();
+}
+function setHeight2() {
+	let obj = document.getElementById("height2");
+	if (obj.checkValidity())
+		document.getElementById("height1").value = obj.value;
+	setHeight1();
+}
+
+function setSizeN1() {
+	let obj = document.getElementById("sizeN1");
+	document.getElementById("sizeN2").value = obj.value;
+	SIZECELL = +obj.value;
+	if (workleft) zero();
+	else clean();
+}
+function setSizeN2() {
+	let obj = document.getElementById("sizeN2");
+	if (obj.checkValidity())
+		document.getElementById("sizeN1").value = obj.value;
+	setSizeN1();
+}
+
+function setSizeW1() {
+	let obj = document.getElementById("sizeW1");
+	document.getElementById("sizeW2").value = obj.value;
+	SIZEWALL = +obj.value;
+	if (workleft) zero();
+	else clean();
+}
+function setSizeW2() {
+	let obj = document.getElementById("sizeW2");
+	if (obj.checkValidity())
+		document.getElementById("sizeW1").value = obj.value;
+	setSizeW1();
+}
+
+function setKeep1() {
+	let obj = document.getElementById("keep1");
+	document.getElementById("keep2").value = obj.value;
+	cfg.keep = +obj.value;
+}
+function setKeep2() {
+	let obj = document.getElementById("keep2");
+	if (obj.checkValidity())
+		document.getElementById("keep1").value = obj.value;
+	setKeep1();
+}
+
+function setRate1() {
+	let obj = document.getElementById("rate1");
+	document.getElementById("rate2").value = obj.value;
+	cfg.rate = +obj.value;
+}
+function setRate2() {
+	let obj = document.getElementById("rate2");
+	if (obj.checkValidity())
+		document.getElementById("rate1").value = obj.value;
+	setRate1();
+}
+
+function setGrow1() {
+	let obj = document.getElementById("grow1");
+	document.getElementById("grow2").value = obj.value;
+	growths = +obj.value;
+	ChgGrowths();
+}
+function setGrow2() {
+	let obj = document.getElementById("grow2");
+	if (obj.checkValidity())
+		document.getElementById("grow1").value = obj.value;
+	setGrow1();
+}
+
+function setNoX1() {
+	let obj = document.getElementById("nox1");
+	document.getElementById("nox2").value = obj.value;
+	cfg.noX = +obj.value;
+}
+function setNoX2() {
+	let obj = document.getElementById("nox2");
+	if (obj.checkValidity())
+		document.getElementById("nox1").value = obj.value;
+	setNoX1();
+}
+
+function setHch1() {
+	let obj = document.getElementById("hch1");
+	document.getElementById("hch2").value = obj.value;
+	Hch = +obj.value;
+}
+function setHch2() {
+	let obj = document.getElementById("hch2");
+	if (obj.checkValidity())
+		document.getElementById("hch1").value = obj.value;
+	setHch1();
+}
+
+function setVch1() {
+	let obj = document.getElementById("vch1");
+	document.getElementById("vch2").value = obj.value;
+	Vch = +obj.value;
+}
+function setVch2() {
+	let obj = document.getElementById("vch2");
+	if (obj.checkValidity())
+		document.getElementById("vch1").value = obj.value;
+	setVch1();
+}
+
+function setFav1() {
+	let obj = document.getElementById("fav1");
+	document.getElementById("fav2").value = obj.value;
+	favor = +obj.value;
+}
+function setFav2() {
+	let obj = document.getElementById("fav2");
+	if (obj.checkValidity())
+		document.getElementById("fav1").value = obj.value;
+	setFav1();
+}
+
+function setRun1() {
+	let obj = document.getElementById("run1");
+	document.getElementById("run2").value = obj.value;
+	cfg.run = +obj.value;
+}
+function setRun2() {
+	let obj = document.getElementById("run2");
+	if (obj.checkValidity())
+		document.getElementById("run1").value = obj.value;
+	setRun1();
+}
+
+function setGamma1() {
+	let obj = document.getElementById("gamma1");
+	document.getElementById("gamma2").value = obj.value;
+	gradGamma = +obj.value;
+}
+function setGamma2() {
+	let obj = document.getElementById("gamma2");
+	if (obj.checkValidity())
+		document.getElementById("gamma1").value = obj.value;
+	setGamma1();
+}
+
+function setSpeed1() {
+	let obj = document.getElementById("speed1");
+	document.getElementById("speed2").value = obj.value;
+	speed = +Math.ceil(Math.pow(2,obj.value));
+}
+function setSpeed2() {
+	let obj = document.getElementById("speed2");
+	if (obj.checkValidity())
+		document.getElementById("speed1").value = obj.value;
+	setSpeed1();
+}
+
+function setBias1() {
+	let obj = document.getElementById("bias1");
+	document.getElementById("bias2").value = obj.value;
+	cfg.bias = +obj.value;
+}
+function setBias2() {
+	let obj = document.getElementById("bias2");
+	if (obj.checkValidity())
+		document.getElementById("bias1").value = obj.value;
+	else if (obj.value === "")
+		document.getElementById("bias1").value = 0;
+	setBias1();
+}
+
+function setSteps() {
+	let obj = document.getElementById("steps");
+	gradStepsType = document.getElementById("stepsType").value;
+	if (gradStepsType === "A") {
+		obj.style.visibility = "hidden";
+		gradSteps = null;
+	} else {
+		obj.style.visibility = "visible";
+		if (!obj.checkValidity()) {
+			if (+obj.value > 9999) obj.value = 9999;
+			else obj.value = 250;
+		}
+		gradSteps = +obj.value;
+	}
+}
+
+function setMethod() {
+	let idx = document.getElementById("method").selectedIndex;
+	let opt = document.getElementById("method").options[idx];
+	method = opt.fvalue;
+
+	if (opt.fvalue.choose) {
+		document.getElementById("trcho").style.display = "";
+	} else {
+		document.getElementById("trcho").style.display = "none";
+	}
+
+	if (opt.fvalue.ordering) {
+		document.getElementById("trord").style.display = "";
+	} else {
+		document.getElementById("trord").style.display = "none";
+	}
+
+	if (opt.fvalue.cut) {
+		document.getElementById("trcut").style.display = "";
+		document.getElementById("trcwh").style.display = "";
+	} else {
+		document.getElementById("trcut").style.display = "none";
+		document.getElementById("trcwh").style.display = "none";
+	}
+
+	if (opt.fvalue.begin) {
+		document.getElementById("trbeg").style.display = "";
+	} else {
+		document.getElementById("trbeg").style.display = "none";
+	}
+
+	if (opt.fvalue.work) {
+		document.getElementById("trwrk").style.display = "";
+		document.getElementById("colWork1").style.visibility = "";
+		document.getElementById("colWork2").style.visibility = "";
+		if (opt.fvalue.work > 1) {
+			document.getElementById("trSwrk").style.display = "";
+		} else {
+			document.getElementById("trSwrk").style.display = "none";
+		}
+	} else {
+		document.getElementById("trwrk").style.display = "none";
+		document.getElementById("colWork1").style.visibility = "hidden";
+		document.getElementById("colWork2").style.visibility = "hidden";
+		document.getElementById("trSwrk").style.display = "none";
+	}
+
+	if (opt.fvalue.growths) {
+		document.getElementById("trgrow").style.display = "";
+		document.getElementById("trsame").style.display = "";
+		setSame();
+	} else {
+		document.getElementById("trgrow").style.display = "none";
+		document.getElementById("trsame").style.display = "none";
+		document.getElementById("trconf").style.display = "none";
+	}
+
+	if (opt.fvalue.keep) {
+		document.getElementById("trkeep").style.display = "";
+	} else {
+		document.getElementById("trkeep").style.display = "none";
+	}
+
+	if (opt.fvalue.nox) {
+		document.getElementById("trnox").style.display = "";
+	} else {
+		document.getElementById("trnox").style.display = "none";
+	}
+
+	if (opt.fvalue.hch) {
+		document.getElementById("trhch").style.display = "";
+	} else {
+		document.getElementById("trhch").style.display = "none";
+	}
+	if (opt.fvalue.vch) {
+		document.getElementById("trvch").style.display = "";
+	} else {
+		document.getElementById("trvch").style.display = "none";
+	}
+
+	if (opt.fvalue.favor) {
+		document.getElementById("trfav").style.display = "";
+	} else {
+		document.getElementById("trfav").style.display = "none";
+	}
+
+	if (opt.fvalue.bias) {
+		document.getElementById("trbias").style.display = "";
+	} else {
+		document.getElementById("trbias").style.display = "none";
+	}
+
+	if (opt.fvalue.run) {
+		document.getElementById("trrun").style.display = "";
+		document.getElementById("run1").max = opt.fvalue.run;
+		document.getElementById("run2").max = opt.fvalue.run;
+		setRun1();
+	} else {
+		document.getElementById("trrun").style.display = "none";
+	}
+
+	zero();
+}
+
+
+
+var cfgs = new Array(10);
+var clickedConfig = [true,false,false,false,false,false,false,false,false,false];
+function setSame(init=false) {
+	let same = +document.getElementById("same").value;
+	if (init || same) {
+		document.getElementById("trrate").style.display = "none";
+		document.getElementById("trconf").style.display = "none";
+		for (let i=0; i<10; i++)
+			cfgs[i] = cfg;
+	} else {
+		document.getElementById("trconf").style.display = "";
+		document.getElementById("trrate").style.display = "";
+		ChgGrowths();
+		clickConfig();
+	}
+	setRate1();
+}
+function ChgGrowths() {
+	let configs = document.getElementById("configs");
+	for (let i=0;i<10; i++) {
+		configs.children[i].style.opacity = (i<growths) ? 1 : .4;
+	}
+}
+function clickConfig(n=null,shiftKey=null) {
+	if (n === null) {
+		// change from "same" to "different"
+		for (let i=0; i<10; i++) {
+			if (clickedConfig[i])
+				cfgs[n] = cfg;
+			else
+				cfgs[i] = { ...cfgs[i] };
+		}
+	} else if (shiftKey) {
+		if ( clickedConfig.filter(x => x).length === 1 && clickedConfig[n] ) return; // don't remove last
+
+		clickedConfig[n] = !clickedConfig[n];
+		if (clickedConfig[n])
+			cfgs[n] = cfg;
+		else
+			cfgs[n] = { ...cfgs[n] };
+	} else {
+		for (let i=0; i<10; i++) {
+			clickedConfig[i] = false;
+			cfgs[i] = { ...cfgs[i] };
+		}
+		clickedConfig[n] = true;
+		cfg = cfgs[n];
+	}
+
+	let configs = document.getElementById("configs");
+	for (let i=0; i<10; i++) {
+		if (clickedConfig[i])
+			configs.children[i].style.background = "yellow";
+		else
+			configs.children[i].style.background = "";
+	}
+
+	// change settings to the ones stored in cfg
+	document.getElementById("keep1").value = cfg.keep;
+	document.getElementById("nox1").value = cfg.noX;
+	document.getElementById("run1").value = cfg.run;
+	document.getElementById("bias1").value = cfg.bias;
+	document.getElementById("rate1").value = cfg.rate;
+	if (cfg.choose.length === 1) {
+		document.getElementById("choose").value = cfg.choose[0];
+	} else {
+		document.getElementById("choose").value = "*";
+		let ch = { 1:0, 2:0, M:0, O:0, R:0 };
+		cfg.choose.forEach(v => ch[v]++);
+
+		document.getElementById("chomul1").value = ch["1"];
+		document.getElementById("chomul2").value = ch["2"];
+		document.getElementById("chomulM").value = ch["M"];
+		document.getElementById("chomulO").value = ch["O"];
+		document.getElementById("chomulR").value = ch["R"];
+	}
+	setKeep1();
+	setNoX1();
+	setRun1();
+	setBias1();
+	setRate1();
+	setChoose();
+}
+
+
+
+function setChoose() {
+	let val = document.getElementById("choose").value;
+	if (val === "*") {
+		document.getElementById("chomulti").style.display = "";
+		setMulti();
+	} else {
+		cfg.choose = [ val ];
+		document.getElementById("chomulti").style.display = "none";
+	}
+}
+function setMulti() {
+	let ids = ["chomul1", "chomul2", "chomulM", "chomulO", "chomulR"];
+	let allZero = true;
+	cfg.choose = [];
+	ids.forEach(id => {
+		let obj = document.getElementById(id);
+		if (!obj.checkValidity()) obj.value = (+obj.value>100) ? 100 : 1;
+		if (obj.value != 0) allZero = false;
+		for (let i=obj.value; i>0; i--)
+			cfg.choose.push( id.substr(6) );
+	});
+	if (allZero) {
+		document.getElementById("chomul1").value = 1;
+		cfg.choose = ["1"];
+	}
+}
+
+function setOrdering() {
+	ordering = document.getElementById("ordering").value;
+}
+function setCut() {
+	cut = document.getElementById("cut").value;
+}
+function setCwhere() {
+	cutwhere = document.getElementById("cwhere").value;
+}
+function setWork() {
+	showwork = +document.getElementById("work").value;
+}
+function addMethod(func) {
+	let opt = document.createElement("option");
+	opt.fvalue = func;
+	opt.text = func.showName ? func.showName : func.name;
+	document.getElementById("method").add(opt,null);
+}
+
+function exit2point(p) {
+	if (!p)
+		return Point( Rand(xx)+1,Rand(yy)+1 );
+
+	let y = p%10;
+	let x = (p-y)/10;
+	if (x == 2) x = Math.ceil(xx/2);
+	else if (x == 3) x = xx;
+	if (y == 2) y = Math.ceil(yy/2);
+	else if (y == 3) y = yy;
+	return Point(x,y);
+}
+function setExits() {
+	exits = new Set;
+	[11,21,31,12,22,32,13,23,33].filter(ex => document.getElementById("ex"+ex).checked).forEach(ex => exits.add(ex));
+
+	document.getElementById("btnSolve").disabled = exits.size==0;
+	document.getElementById("btnGrad").disabled = exits.size==0;
+}
+
+
+
+
+function drawSize() {
+	document.getElementById("btnPlay").disabled = false;
+	document.getElementById("btnStep").disabled = false;
+	document.getElementById("btnPlay").textContent = "PLAY";
+
+	canvas.width = xx*SIZECELL + (xx+1)*SIZEWALL;
+	canvas.height = yy*SIZECELL + (yy+1)*SIZEWALL;
+	ctx.fillStyle = document.getElementById("colWall").value;
+	ctx.fillRect(0,0,canvas.width,canvas.height);
+	ctx.fillStyle = document.getElementById("colPath").value;
+	return true;
+}
+
+function drawBridge(cell1,cell2, add=true) {
+	let [minX,sizeX] = (cell1[0]>cell2[0]) ? [cell2[0],cell1[0]-cell2[0]] : [cell1[0],cell2[0]-cell1[0]];
+	let [minY,sizeY] = (cell1[1]>cell2[1]) ? [cell2[1],cell1[1]-cell2[1]] : [cell1[1],cell2[1]-cell1[1]];
+	ctx.fillRect( minX*(SIZEWALL+SIZECELL)-SIZECELL, minY*(SIZEWALL+SIZECELL)-SIZECELL, sizeX*(SIZEWALL+SIZECELL)+SIZECELL, sizeY*(SIZEWALL+SIZECELL)+SIZECELL );
+
+	if (add) {
+		if (inMaze.has(cell1))
+			inMaze.get(cell1).add(cell2);
+		else
+			inMaze.set(cell1, new Set([cell2]));
+
+		if (inMaze.has(cell2))
+			inMaze.get(cell2).add(cell1);
+		else
+			inMaze.set(cell2, new Set([cell1]));
+	}
+}
+function drawSquare(cell1,cell2) {
+	let [minX,sizeX] = (cell1[0]>cell2[0]) ? [cell2[0],cell1[0]-cell2[0]] : [cell1[0],cell2[0]-cell1[0]];
+	let [minY,sizeY] = (cell1[1]>cell2[1]) ? [cell2[1],cell1[1]-cell2[1]] : [cell1[1],cell2[1]-cell1[1]];
+	ctx.strokeRect( minX*(SIZEWALL+SIZECELL)-SIZECELL+.5, minY*(SIZEWALL+SIZECELL)-SIZECELL+.5, sizeX*(SIZEWALL+SIZECELL)+SIZECELL-1, sizeY*(SIZEWALL+SIZECELL)+SIZECELL-1 );
+}
+
+
+
+
+
+var inMaze = new Map;
+function randomBiasedNeighbor(cell, f=null, mybias=cfg.bias) {
+	let Weighs = new Map;
+	let total_weight = 0;
+
+	let w = mybias>0 ? 10+mybias : 10;
+	if (cell[0]>1) {
+		let P = Point(cell[0]-1,cell[1]);
+		if ( !f || f(P) ) {
+			Weighs.set( P, w );
+			total_weight += w;
+		}
+	}
+	if (cell[0]<xx) {
+		let P = Point(cell[0]+1,cell[1]);
+		if ( !f || f(P) ) {
+			Weighs.set( P, w );
+			total_weight += w;
+		}
+	}
+
+	w = mybias<0 ? 10-mybias : 10;
+	if (cell[1]>1) {
+		let P = Point(cell[0],cell[1]-1);
+		if ( !f || f(P) ) {
+			Weighs.set( P, w );
+			total_weight += w;
+		}
+	}
+	if (cell[1]<yy) {
+		let P = Point(cell[0],cell[1]+1);
+		if ( !f || f(P) ) {
+			Weighs.set( P, w );
+			total_weight += w;
+		}
+	}
+
+	if (!total_weight) return null;
+
+	let skip = Rand(total_weight);
+	let R = null;
+	Weighs.forEach((w,c) => {
+		skip -= w;
+		if (skip < 0) { R = c; skip = Infinity; }
+	});
+	return R;
+}
+function cellNeighbors(cell) {
+	let neighbors = [];
+
+	if (cell[0]>1)
+		neighbors.push(Point(cell[0]-1,cell[1]));
+	if (cell[0]<xx)
+		neighbors.push(Point(cell[0]+1,cell[1]));
+	if (cell[1]>1)
+		neighbors.push(Point(cell[0],cell[1]-1));
+	if (cell[1]<yy)
+		neighbors.push(Point(cell[0],cell[1]+1));
+
+	return neighbors;
+}
+
+
+
+
+
+
+// pick a cell to expand from
+function* cellgrow() {
+	inMaze.clear();
+	let stack = [ exit2point(+document.getElementById("begin").value) ];
+	stack.forEach(cell => inMaze.set(cell,new Set));
+
+	let cell = null;
+	let fails = 0;
+	while (cell || stack.length) {
+		if (!cell) {
+			let i;
+			let chooseMethod = (cfg.choose.length<2) ? cfg.choose[0] : cfg.choose[ Rand(cfg.choose.length) ];
+
+			if (chooseMethod === "R")
+				i = Rand(stack.length);
+			else if (chooseMethod === "M")
+				i = Math.floor(stack.length/2);
+			else if (chooseMethod === "O")
+				i = 0;
+			else
+				i = stack.length - chooseMethod;
+			cell = stack.splice(i,1)[0];
+		}
+
+		if (cfg.noX && inMaze.get(cell).size > 2 && Rand(100)<cfg.noX) {
+			cell = null;
+			continue;
+		}
+		let newcell = randomBiasedNeighbor(cell, c => !inMaze.has(c));
+		if (!newcell) {
+			fails++;
+			cell = null;
+			if (fails > 30 && (fails > 100 || stack.length > 50000)) {
+				// stack too big fails too much, making splice too slow. Cleanup time!
+				stack = stack.filter( c => cellNeighbors(c).filter(c => !inMaze.has(c)).length > 0 );
+				fails = 0;
+			}
+			continue;
+		}
+		fails = 0;
+
+		drawBridge(cell,newcell);
+		stack.push(cell);
+		yield 1;
+
+		if (cfg.run) {
+			while (Rand(100)<cfg.run) {
+				let dire = [ newcell[0]-cell[0], newcell[1]-cell[1] ];
+				let more = Point( newcell[0]+dire[0],newcell[1]+dire[1] );
+				if ( !cellNeighbors(newcell).filter(c => !inMaze.has(c)).includes(more) ) break;
+
+				cell = newcell;
+				newcell = more;
+				drawBridge(cell,newcell);
+				stack.push(cell);
+				yield 1;
+			}
+		}
+
+		if (cfg.keep && Rand(100)<cfg.keep) {
+			cell = newcell;
+		} else {
+			stack.push(newcell);
+			cell = null;
+		}
+	}
+}
+cellgrow.showName = "Cell Grow";
+cellgrow.choose = true;
+cellgrow.keep = true;
+cellgrow.begin = true;
+cellgrow.nox = true;
+cellgrow.run = 100;
+cellgrow.bias = true;
+addMethod(cellgrow);
+
+// pick a cell to expand from; many starting points
+// each 'growth' can have completely different parameters
+function* multigrow() {
+	inMaze.clear();
+
+	let numStacks = document.getElementById("grow1").value;
+	if (numStacks > xx*yy) numStacks = xx*yy; // protection against hangs
+	let members = new Array(numStacks); // array of cells that ever belonged to a stack
+
+	let stacks = new Array(numStacks);
+	for (let s=0; s<numStacks; s++) {
+		let cell = exit2point(0);
+		if (inMaze.has(cell)) {
+			s--;
+			continue;
+		}
+		stacks[s] = [ cell ];
+		members[s] = [ cell ];
+		inMaze.set(cell,new Set);
+		drawBridge(cell,cell,false);
+	}
+
+	function* multigrow1(s) {
+		let cfg = cfgs[s];
+		let stack = stacks[s];
+		let cell = null;
+		let fails = 0;
+		while (cell || stack.length) {
+			if (!cell) {
+				let i;
+				let chooseMethod = (cfg.choose.length<2) ? cfg.choose[0] : cfg.choose[ Rand(cfg.choose.length) ];
+
+				if (chooseMethod === "R")
+					i = Rand(stack.length);
+				else if (chooseMethod === "M")
+					i = Math.floor(stack.length/2);
+				else if (chooseMethod === "O")
+					i = 0;
+				else
+					i = stack.length - chooseMethod;
+				cell = stack.splice(i,1)[0];
+			}
+
+			if (cfg.noX && inMaze.get(cell).size > 2 && Rand(100)<cfg.noX) {
+				cell = null;
+				continue;
+			}
+			let newcell = randomBiasedNeighbor(cell, c => !inMaze.has(c), cfg.bias);
+			if (!newcell) {
+				fails++;
+				cell = null;
+				if (fails > 30 && (fails > 100 || stack.length > 50000)) {
+					// stack too big fails too much, making splice too slow. Cleanup time!
+					stack = stack.filter( c => cellNeighbors(c).filter(c => !inMaze.has(c)).length > 0 );
+					fails = 0;
+				}
+				continue;
+			}
+			fails = 0;
+
+			drawBridge(cell,newcell);
+			stack.push(cell);
+			members[s].push(newcell);
+			yield 1;
+
+			if (cfg.run) {
+				while (Rand(100)<cfg.run) {
+					let dire = [ newcell[0]-cell[0], newcell[1]-cell[1] ];
+					let more = Point( newcell[0]+dire[0],newcell[1]+dire[1] );
+					if ( !cellNeighbors(newcell).filter(c => !inMaze.has(c)).includes(more) ) break;
+
+					cell = newcell;
+					newcell = more;
+					drawBridge(cell,newcell);
+					stack.push(cell);
+					members[s].push(newcell);
+					yield 1;
+				}
+			}
+
+			if (cfg.keep && Rand(100)<cfg.keep) {
+				cell = newcell;
+			} else {
+				stack.push(newcell);
+				cell = null;
+			}
+		}
+	}
+
+	let GENS = new Array(numStacks);
+	for (let s=0; s<numStacks; s++)
+		GENS[s] = multigrow1(s);
+	while (1) {
+		let total_rate = 0;
+		for (let s=0; s<numStacks; s++) {
+			if (!GENS[s]) continue;
+			total_rate += cfgs[s].rate;
+		}
+		if (!total_rate) break;
+
+		let skip = Rand(total_rate);
+		for (let s=0; s<numStacks; s++) {
+			if (!GENS[s]) continue;
+			skip -= cfgs[s].rate;
+			if (skip >= 0) continue;
+
+			let next = GENS[s].next();
+			if (!next.done)
+				yield next.value;
+			else
+				GENS[s] = null;
+			break;
+		}
+	}
+
+	while (members.length > 1) {
+		let member = members.pop();
+		Rand.shuffle(member);
+		for (let i=0; i<member.length; i++) {
+			let cell = member[i];
+			if (cfg.noX && inMaze.get(cell).size > 2 && Rand(100)<cfg.noX) continue; // use 'current' noX
+			let neighs = cellNeighbors(cell).filter(n => !member.includes(n));
+			if (cfg.noX) // use 'current' noX
+				neighs = neighs.filter(n => inMaze.get(n).size < 3 || Rand(100)>=cfg.noX);
+			if (!neighs.length) continue;
+			let neigh = neighs[Rand(neighs.length)];
+			drawBridge(cell,neigh);
+			yield 1;
+
+			for (let m=0; m<members.length; m++) {
+				if (!members[m].includes(neigh)) continue;
+				members[m] = Array.prototype.concat(members[m], member);
+				break;
+			}
+
+			break;
+		}
+	}
+}
+multigrow.showName = "Multi Grow";
+multigrow.growths = true;
+multigrow.choose = true;
+multigrow.keep = true;
+multigrow.nox = true;
+multigrow.run = 100;
+multigrow.bias = true;
+addMethod(multigrow);
+
+// pick a cell to expand to
+function* prim() {
+	inMaze.clear();
+	let cells = [ exit2point(+document.getElementById("begin").value) ];
+	let frontierSet = new Set;
+	let frontierList = [];
+	cells.forEach(cell => inMaze.set(cell,new Set));
+	cells.forEach(cell => {
+		cellNeighbors(cell).filter(c => !inMaze.has(c)).forEach(c => {
+			if (!frontierSet.has(c)) {
+				frontierList.push(c);
+				frontierSet.add(c);
+			}
+		});
+	});
+
+	while (frontierList.length) {
+		let i = Rand(frontierList.length);
+		let cell = frontierList.splice(i,1)[0];
+		frontierSet.delete(cell);
+
+		let oldcell = randomBiasedNeighbor(cell, c => inMaze.has(c) && (!cfg.noX || inMaze.get(c).size<3 || Rand(100)>=cfg.noX));
+		if (!oldcell) continue;
+
+		drawBridge(cell,oldcell);
+		yield 1;
+
+		cellNeighbors(cell).filter(c => !inMaze.has(c)).forEach(c => {
+			if (!frontierSet.has(c)) {
+				frontierList.push(c);
+				frontierSet.add(c);
+			}
+		});
+	}
+}
+prim.showName = "Prim";
+prim.begin = true;
+prim.nox = true;
+prim.bias = true;
+addMethod(prim);
+
+// random paths attach to maze
+function* wilson() {
+	inMaze.clear();
+	let cells = [ exit2point(+document.getElementById("begin").value) ];
+	cells.forEach(cell => inMaze.set(cell,new Set));
+	cells.forEach(cell => drawBridge(cell,cell,false));
+
+	let addPathFrom = function*(start) {
+		let path = new Map;
+		let me = start;
+		let work = showwork;
+
+		if (work === 2) {
+			ctx.fillStyle = document.getElementById("colWork").value;
+			drawBridge( me, me, false );
+			yield 0;
+		}
+
+		let dire = null;
+		while ( !inMaze.has(me) ) {
+			let newme = null;
+
+			if (cfg.run && dire && Rand(100)<cfg.run) {
+				let more = Point( me[0]+dire[0],me[1]+dire[1] );
+				if (cellNeighbors(me).includes(more)) {
+					if (!(cfg.noX && inMaze.has(more) && inMaze.get(more).size>2 && Rand(100)<cfg.noX))
+						newme = more;
+				}
+			}
+
+			if (!newme)
+				newme = randomBiasedNeighbor(me, c => !cfg.noX || !inMaze.has(c) || inMaze.get(c).size<3 || Rand(100)>=cfg.noX);
+
+			dire = [ newme[0]-me[0], newme[1]-me[1] ];
+
+			if (path.has(newme)) {
+				me = newme;
+				let deleted = 0;
+				if (work === 2) ctx.fillStyle = document.getElementById("colWall").value;
+				while (path.has(newme)) {
+					let newnewme = path.get(newme);
+					if (work === 2) drawBridge( newme, newnewme, false );
+					path.delete(newme);
+					newme = newnewme;
+					deleted++;
+				}
+				if (work === 2) {
+					ctx.fillStyle = document.getElementById("colWork").value;
+					drawBridge( me, me, false );
+					yield -deleted;
+				}
+			} else {
+				if (work === 2) {
+					drawBridge( me, newme, false );
+					yield 1;
+				}
+				path.set(me, newme);
+				me = newme;
+			}
+		}
+
+		if (work === 0) {
+			let thePath = [];
+			while (path.has(start)) {
+				let newstart = path.get(start);
+				thePath.push(start);
+				start = newstart;
+			}
+			while (thePath.length) {
+				let c = thePath.pop();
+				drawBridge( c, path.get(c) );
+				yield 1;
+			}
+		} else {
+			if (work === 1) {
+				ctx.fillStyle = document.getElementById("colWork").value;
+				let oldstart = start;
+				while (path.has(start)) {
+					let newstart = path.get(start);
+					drawBridge( start, newstart,false );
+					yield 1;
+					start = newstart;
+				}
+				start = oldstart;
+			}
+
+			ctx.fillStyle = document.getElementById("colPath").value;
+			while (path.has(start)) {
+				let newstart = path.get(start);
+				drawBridge( start, newstart );
+				start = newstart;
+			}
+			yield 0;
+		}
+	}
+
+
+	const MAXrandomtries = 1000;
+	let randomtries = 0;
+	let nextRandom = function*() {
+		randomtries = 0;
+		while (1) {
+			let from = Point(Rand(xx)+1, Rand(yy)+1);
+			if ( inMaze.has(from) ) {
+				if (randomtries++ > MAXrandomtries)
+					return;
+			} else {
+				randomtries = 0;
+				yield* addPathFrom( from );
+				return;
+			}
+		}
+	};
+
+	let nextX = 1, nextY = 1;
+	let nextOrder = function*() {
+		if ( !inMaze.has(Point(nextX,nextY)) )
+			yield* addPathFrom(Point(nextX,nextY));
+		nextX++;
+		if (nextX > xx) {
+			nextX = 1;
+			nextY++;
+		}
+		return;
+	}
+
+
+	while (1) {
+		if (ordering === "R" && randomtries < MAXrandomtries) {
+			yield* nextRandom();
+		} else if (nextY <= yy) {
+			yield* nextOrder();
+		} else break;
+	}
+}
+wilson.showName = "Wilson";
+wilson.ordering = true;
+wilson.begin = true;
+wilson.nox = true;
+wilson.run = 99;
+wilson.bias = true;
+wilson.work = 1;
+addMethod(wilson);
+
+// remove walls randomly
+function* kruskal() {
+	inMaze.clear();
+	let parent = new Map;
+
+	let walls = []; // build wall list
+	for (let y=1; y<=yy; y++) for (let x=1; x<=xx; x++) {
+		if (x<xx) {
+			walls.push([Point(x,y), Point(x+1,y)]);
+		}
+		if (y<yy) {
+			walls.push([Point(x,y), Point(x,y+1)]);
+		}
+	}
+	Rand.shuffle(walls);
+
+	let walls2 = []; // retry wall list (for bias)
+	while (walls.length) {
+		let wall = walls.pop();
+		if (!walls.length && walls2 !== null) {
+			walls = walls2;
+			walls2 = null;
+		}
+		let cell1ori = wall[0];
+		let cell2ori = wall[1];
+		if (cfg.noX) {
+			if ( (inMaze.has(cell1ori) && inMaze.get(cell1ori).size>2) || (inMaze.has(cell2ori) && inMaze.get(cell2ori).size>2) ) {
+				if ( Rand(100)<cfg.noX ) continue;
+			}
+		}
+		if (cfg.bias && walls2 !== null) {
+			if (cell1ori[0]===cell2ori[0]) { // vertical union
+				if (cfg.bias>0 && Rand(100+10)<cfg.bias) { // FIXME: hardnum: 100 = maxbias
+					walls2.push(wall);
+					continue;
+				}
+			} else {
+				if (cfg.bias<0 && Rand(100+10)<-cfg.bias) { // FIXME: hardnum: 100 = maxbias
+					walls2.push(wall);
+					continue;
+				}
+			}
+		}
+
+		let cell1 = cell1ori;
+		let cell2 = cell2ori;
+		while ( parent.has(cell1) ) cell1 = parent.get(cell1);
+		while ( parent.has(cell2) ) cell2 = parent.get(cell2);
+
+		// add shortcuts if possible. Not necessary, but reduces slowdown
+		if (cell1 !== cell1ori) parent.set( cell1ori, cell2 );
+		if (cell2 !== cell2ori) parent.set( cell2ori, cell2 );
+
+		// if cells are not joined, join them
+		if (cell1 !== cell2) {
+			drawBridge( wall[0], wall[1] );
+			parent.set( cell1, cell2 );
+			yield 1;
+		}
+	}
+}
+kruskal.showName = "Kruskal";
+kruskal.nox = true;
+kruskal.bias = true;
+addMethod(kruskal);
+
+function* eller() {
+	inMaze.clear();
+	let x2set = [];
+	for (let x=1; x<=xx; x++)
+		x2set[x] = new Set([x]);
+
+	for (let y=1; y<=yy; y++) {
+		// randomly join sets
+		for (let x=1; x<xx; x++) {
+			if (x2set[x] === x2set[x+1]) continue; // same set, already joined
+			if (y!=yy && Rand(100)>=Hch) continue; // % of horizontal join
+
+			// join sets x2set[x] and x2set[x+1]
+			x2set[x+1].forEach(i => {
+				x2set[x].add(i);
+				x2set[i] = x2set[x];
+			});
+			drawBridge(Point(x,y),Point(x+1,y));
+			yield 1;
+		}
+		if (y===yy) break;
+
+		// randomly join vertically
+		let allSets = new Set(x2set);
+		allSets.delete(undefined); // index 0 :(
+		allSets = [...allSets];
+		x2set = [];
+		while (allSets.length) {
+			let newSet = new Set();
+
+			// for each set, filter crossroads (if desired) and scramble its elements
+			let xs = [...allSets.pop()];
+			if (cfg.noX) {
+				xs = xs.filter(x => {
+					let p = Point(x,y);
+					if ( inMaze.has(p) && inMaze.get(p).size>2 && Rand(100)<cfg.noX ) return false;
+					return true;
+				});
+			}
+			Rand.shuffle(xs);
+
+			// randomly connect to the cell below (minimum one connection)
+			for (let i=0; i<xs.length; i++) {
+				if (i && Rand(100)>=Vch) continue; // % of vertical join
+				let val = xs[i];
+				newSet.add(val);
+				x2set[val] = newSet;
+				drawBridge(Point(val,y),Point(val,y+1));
+				yield 1;
+			}
+		};
+		// fill spaces
+		for (let x=1; x<=xx; x++)
+			if (!x2set[x])
+				x2set[x] = new Set([x]);
+	}
+}
+eller.showName = "Eller";
+eller.nox = true;
+eller.hch = true;
+eller.vch = true;
+addMethod(eller);
+
+function* division() {
+	inMaze.clear();
+	let sections = [ [1,1,xx-1,yy-1, []] ]; // each section has x, y, width, height, then an array of cell pairs: the 'connections' out of the section
+
+	let lastwork = 0; // to know when to redraw work
+	const workThreshold = 20; // if work=1, only show work if area is greater than this
+
+	while (sections.length) {
+		let [x,y,w,h, us] = sections.pop();
+		//let [x,y,w,h, us] = sections.shift();
+		//let i = Rand(sections.length); // cute, but slow and useless
+		//let [x,y,w,h, us] = sections.splice(i,1)[0];
+
+		if (!w && !h) continue; // undivisible section
+
+		let work = showwork;
+
+		// pick horizontal or vertical cut?
+		let vertical;
+		if (!w) vertical = true;
+		else if (!h) vertical = false;
+		else if (cut === "P") {
+			// pick any cut equally
+			vertical = ( Rand(w+h) + 1 ) > w;
+		} else if (cut === "L") {
+			// pick only cuts from the longest axis
+			if (h > w) vertical = true;
+			else if (h < w) vertical = false;
+			else vertical = Rand(2);
+		} else { // (cut === "R")
+			vertical = Rand(2);
+		}
+
+		let union; // array of two points that serve as union between the halves
+		let sect1,sect2;
+		if (vertical) {
+			// vertical cut
+			let cut = (cutwhere === "C") ? Math.ceil(h/2) : Rand.avg(h,+cutwhere) + 1;
+			let where = (w>0) ? Rand(w)+1 : 1;
+			union = [ Point(x+where-1,y+cut-1), Point(x+where-1,y+cut-1+1) ];
+
+			sect1 = [x,y,w,cut-1, [union, ...us.filter( u => u[0][1]<y+cut || u[1][1]<y+cut )]];
+			sect2 = [x,y+cut,w,h-cut, [union, ...us.filter( u => u[0][1]>=y+cut || u[1][1]>=y+cut )]];
+
+			if (cut-1 <= h-cut)
+				[sect1,sect2] = [sect2,sect1];
+		} else {
+			// horizontal cut
+			let cut = (cutwhere === "C") ? Math.ceil(w/2) : Rand.avg(w,+cutwhere) + 1;
+			let where = (h>0) ? Rand(h)+1 : 1;
+			union = [ Point(x+cut-1,y+where-1), Point(x+cut-1+1,y+where-1) ];
+
+			sect1 = [x,y,cut-1,h, [union, ...us.filter( u => u[0][0]<x+cut || u[1][0]<x+cut )]];
+			sect2 = [x+cut,y,w-cut,h, [union, ...us.filter( u => u[0][0]>=x+cut || u[1][0]>=x+cut )]];
+
+			if (cut-1 <= w-cut)
+				[sect1,sect2] = [sect2,sect1];
+		}
+
+		if (!sect1[2] && !sect1[3]) sect1 = null;
+		if (!sect2[2] && !sect2[3]) sect2 = null;
+		if (sect1) sections.push(sect1);
+		if (sect2) sections.push(sect2);
+
+		if (work !== lastwork) clean();
+
+		if (work) {
+			ctx.strokeStyle = document.getElementById("colWork").value;
+			ctx.fillStyle = document.getElementById("colWall").value;
+			drawBridge([x,y],[x+w,y+h], false);
+			ctx.fillStyle = document.getElementById("colPath").value;
+			us.forEach(u => drawBridge(u[0],u[1],false));
+
+			let sects = [];
+			if (work !== lastwork) sects = sections;
+			else {
+				if (sect1) sects.push(sect1);
+				if (sect2) sects.push(sect2);
+			}
+			sects = sects.filter(s => s[2]*s[3]>workThreshold);
+
+			sects.forEach(sect => {
+				let [x,y,w,h,us] = sect;
+				drawSquare([x,y],[x+w,y+h]);
+				ctx.fillStyle = document.getElementById("colPath").value;
+				us.forEach(u => drawBridge(u[0],u[1],false));
+			});
+
+			if (sections.length) {
+				let [x,y,w,h,us] = sections[sections.length-1];
+				if (w*h>workThreshold) {
+					if (work > 1) {
+						ctx.fillStyle = document.getElementById("colSwrk").value;
+						drawBridge([x,y],[x+w,y+h], false);
+						drawSquare([x,y],[x+w,y+h]);
+					}
+					ctx.fillStyle = document.getElementById("colPath").value;
+					us.forEach(u => drawBridge(u[0],u[1],false));
+				}
+			}
+		}
+
+		lastwork = work;
+		drawBridge(union[0],union[1]);
+		yield 1;
+	}
+}
+division.showName = "Division";
+division.cut = true;
+division.work = 2;
+addMethod(division);
+
+function* blob() {
+	inMaze.clear();
+	const workThreshold = 20; // only show work if area is greater than this
+	let lastwork = 0; // to know when to redraw work
+
+	let blobs = [ [new Set,[]] ]; // each element is a set of congruent cells that should be further divided, and an array of cells: the unions to other blobs
+	for (let x=1;x<=xx;x++) for (let y=1;y<=yy;y++)
+		blobs[0][0].add( Point(x,y) );
+
+	let drawFullBlob = function([blob,us]) {
+		blob.forEach(cell => {
+			let [x,y] = cell;
+			if (blob.has(Point(x+1,y)) && blob.has(Point(x,y+1)) && blob.has(Point(x+1,y+1)))
+				drawBridge(cell,Point(x+1,y+1),false);
+			else {
+				if (blob.has(Point(x+1,y)))
+					drawBridge(cell,Point(x+1,y),false);
+				if (blob.has(Point(x,y+1)))
+					drawBridge(cell,Point(x,y+1),false);
+			}
+		});
+		ctx.fillStyle = document.getElementById("colPath").value;
+		us.forEach(u => drawBridge(u,u,false));
+	}
+
+	while (blobs.length) {
+		let [blob,us] = blobs.pop();
+		if (blob.size < 2) continue;
+
+		let work = showwork;
+		if (work !== lastwork) {
+			lastwork = work;
+			clean();
+			if (work) {
+				blobs.filter(b => b[0].size>workThreshold).forEach(b => {
+					ctx.fillStyle = document.getElementById("colWork").value;
+					drawFullBlob(b);
+				});
+			}
+		}
+
+		if (work) {
+			ctx.fillStyle = document.getElementById("colWall").value;
+			drawFullBlob([blob,us]);
+			ctx.fillStyle = document.getElementById("colPath").value;
+		}
+
+		if (blob.size <= workThreshold) work = 0;
+		if (work)
+			ctx.fillStyle = document.getElementById("colSwrk").value;
+
+		let sub = [ new Set, new Set ]; // the full set of the subblobs
+		let wal = [ [],[] ]; // the 'frontier' part of the subblobs
+		{
+			let arr = [...blob];
+			for (let i=0; i<=1; i++) {
+				let s = arr.splice(Rand(arr.length),1)[0];
+				blob.delete(s); sub[i].add(s); wal[i].push(s);
+				if (work>1) drawBridge(s,s,false);
+			}
+			if (work>1) yield 0;
+		}
+		while (blob.size) {
+			let i;
+			if (!wal[0].length) i = 1;
+			else if (!wal[1].length) i = 0;
+			else i = (favor && Rand(100)<favor) ? 0 : Rand(2);
+			while (wal[i].length) {
+				let w = wal[i].splice(Rand(wal[i].length),1)[0];
+				let n = cellNeighbors(w).filter( n => blob.has(n) );
+				if (!n.length) continue;
+				n.forEach(c => {
+					blob.delete(c); sub[i].add(c); wal[i].push(c);
+					if (work>1) {
+						let [x,y] = c;
+						if ( sub[i].has(Point(x,y+1)) ) {
+							if ( sub[i].has(Point(x-1,y)) && sub[i].has(Point(x-1,y+1)) )
+								drawBridge(c,Point(x-1,y+1),false);
+							else
+								drawBridge(c,Point(x,y+1),false);
+						}
+						if ( sub[i].has(Point(x,y-1)) ) {
+							if ( sub[i].has(Point(x+1,y)) && sub[i].has(Point(x+1,y-1)) )
+								drawBridge(c,Point(x+1,y-1),false);
+							else
+								drawBridge(c,Point(x,y-1),false);
+						}
+						if ( sub[i].has(Point(x+1,y)) ) {
+							if ( sub[i].has(Point(x,y+1)) && sub[i].has(Point(x+1,y+1)) )
+								drawBridge(c,Point(x+1,y+1),false);
+							else
+								drawBridge(c,Point(x+1,y),false);
+						}
+						if ( sub[i].has(Point(x-1,y)) ) {
+							if ( sub[i].has(Point(x,y-1)) && sub[i].has(Point(x-1,y-1)) )
+								drawBridge(c,Point(x-1,y-1),false);
+							else
+								drawBridge(c,Point(x-1,y),false);
+						}
+					}
+				});
+				if (work>1) yield 0;
+				break;
+			}
+		}
+		if (work > 1) {
+			ctx.fillStyle = document.getElementById("colPath").value;
+			us.forEach(u => drawBridge(u,u,false));
+		}
+		wal = null; // free memory
+
+		if (sub[0].size > sub[1].size) {
+			let tmp = sub[1];
+			sub[1] = sub[0];
+			sub[0] = tmp;
+		}
+
+		let us0 = []; // old unions to sub[0]
+		let us1 = []; // old unions to sub[1]
+		us.forEach(u => {
+			if ( sub[0].has(u) ) us0.push(u);
+			if ( sub[1].has(u) ) us1.push(u);
+		});
+		if (work) {
+			ctx.fillStyle = document.getElementById("colWork").value;
+			drawFullBlob([sub[1],us1]);
+			ctx.fillStyle = document.getElementById("colWork").value;
+			drawFullBlob([sub[0],us0]);
+		}
+
+		blobs.push([sub[1],us1]);
+		blobs.push([sub[0],us0]);
+
+		// add a path between sub1 and sub0
+		sub[0] = Rand.shuffle([...sub[0]]);
+		if (work) {
+			ctx.fillStyle = document.getElementById("colPath").value;
+		}
+		while (1) {
+			let cell = sub[0].pop();
+			let neighs = [...cellNeighbors(cell)].filter(n => sub[1].has(n));
+			if (!neighs.length) continue;
+
+			let neigh = neighs[Rand(neighs.length)];
+			drawBridge(cell,neigh);
+			if (sub[1].has(cell)) {
+				us0.push(neigh);
+				us1.push(cell);
+			} else {
+				us0.push(cell);
+				us1.push(neigh);
+			}
+			break;
+		}
+
+		yield 1;
+	}
+}
+blob.showName = "Blob Division";
+blob.work = 2;
+blob.favor = true;
+addMethod(blob);
+
+function* binary() {
+	inMaze.clear();
+	let [cx,cy] = exit2point(+document.getElementById("begin").value);
+
+	for (let y=1;y<=yy;y++) for (let x=1;x<=xx;x++) {
+		let dx = Math.sign(cx-x);
+		let dy = Math.sign(cy-y);
+
+		let x2 = x+dx;
+		let y2 = y+dy;
+
+		if (dx && dy && x2>=1 && x2<=xx && y2>=1 && y2<=yy) {
+			let total_bias = 20+Math.abs(cfg.bias);
+			let vert_bias = (cfg.bias>0) ? cfg.bias+10 : 10;
+			if (Rand(total_bias) >= vert_bias)
+				drawBridge( Point(x,y), Point(x,y2) );
+			else
+				drawBridge( Point(x,y), Point(x2,y) );
+			yield 1;
+		} else if (dx && x2>=1 && x2<=xx) {
+			drawBridge( Point(x,y), Point(x2,y) );
+			yield 1;
+		} else if (dy && y2>=1 && y2<=yy) {
+			drawBridge( Point(x,y), Point(x,y2) );
+			yield 1;
+		}
+	}
+}
+binary.showName = "Binary Tree";
+binary.bias = true;
+binary.begin = true;
+addMethod(binary);
+
+function* sidew() {
+	inMaze.clear();
+
+	for (let x=1; x<xx; x++) {
+		drawBridge( Point(x,1), Point(x+1,1) );
+		yield 1;
+	}
+
+	for (let y=2; y<=yy; y++) {
+		let ups = []; // from where to pick one to go up
+		for (let x=1; x<=xx; x++) {
+			if ( !cfg.noX || inMaze.get(Point(x,y-1)).size < 3 || Rand(100)>=cfg.noX )
+				ups.push(x);
+			if (!ups.length || (x<xx && Rand(100)<Hch)) { // chance of horizontal connection
+				drawBridge( Point(x,y), Point(x+1,y) );
+				yield 1;
+			} else {
+				// choose random x in ups, and connect upwards
+				let xwh = ups[Rand(ups.length)];
+				drawBridge( Point(xwh,y), Point(xwh,y-1) );
+				ups = [];
+				yield 1;
+			}
+		}
+	}
+}
+sidew.showName = "Sidewinder";
+sidew.nox = true;
+sidew.hch = true;
+addMethod(sidew);
+
+
+
+
+
+
+
+
+
+var GENERATOR;
+var running = false;
+var workleft;
+function frame() {
+	if (!running) return;
+
+	let finished;
+	let start = Date.now() + 1000/30; // 30 fps
+	for (let f=0;f<speed;f++) {
+		let next = GENERATOR.next();
+		finished = next.done;
+		if (finished) break;
+		workleft -= next.value;
+		if (Date.now() > start) break;
+	}
+	if (!finished) {
+		document.getElementById("counter").textContent = workleft;
+		window.requestAnimationFrame(frame);
+	} else {
+		document.getElementById("counter").textContent = "DONE!";
+		stop();
+	}
+}
+
+
+function allbtnDisable(val) {
+	document.getElementById("width1").disabled = !!val;
+	document.getElementById("width2").disabled = !!val;
+	document.getElementById("height1").disabled = !!val;
+	document.getElementById("height2").disabled = !!val;
+	document.getElementById("sizeN1").disabled = !!val;
+	document.getElementById("sizeN2").disabled = !!val;
+	document.getElementById("sizeW1").disabled = !!val;
+	document.getElementById("sizeW2").disabled = !!val;
+	document.getElementById("method").disabled = !!val;
+	document.getElementById("seed").disabled = !!val;
+	document.getElementById("colPath").disabled = val!==null;
+	document.getElementById("colWall").disabled = val!==null;
+	document.getElementById("colWork").disabled = val!==null;
+	document.getElementById("colSwrk").disabled = val!==null;
+}
+
+
+function zero() {
+	document.getElementById("solvers").style.visibility = "hidden";
+	document.getElementById("analysis").style.display = "none";
+	running = false;
+	drawSize();
+
+	allbtnDisable(null);
+
+	document.getElementById("btnPlay").disabled = false;
+	document.getElementById("btnPlay").textContent = "PLAY";
+	document.getElementById("btnStep").disabled = false;
+
+	// initialize RNG
+	let seed = document.getElementById("seed");
+	if ( !seed.checkValidity() || !document.getElementById("seedkeep").checked || seed.value === "" ) {
+		seed.value = Rand.seed();
+		document.getElementById("seedkeep").checked = false;
+	} else {
+		Rand.seed( parseInt(seed.value.substr(0,8),16), parseInt(seed.value.substr(8),16) );
+	}
+
+	inMaze = new Map;
+	workleft = xx*yy-1;
+	document.getElementById("counter").textContent = workleft;
+	GENERATOR = method ? method() : null;
+}
+function play() {
+	if (!running) {
+		// play
+		allbtnDisable(true);
+		document.getElementById("btnPlay").textContent = "PAUSE";
+		document.getElementById("btnStep").disabled = true;
+		running = true;
+
+		frame();
+	} else {
+		// pause
+		allbtnDisable(false);
+		document.getElementById("btnPlay").textContent = "PLAY";
+		document.getElementById("btnStep").disabled = false;
+		running = false;
+	}
+}
+function step() {
+	let next = GENERATOR.next();
+
+	if (!next.done) {
+		workleft -= next.value;
+		document.getElementById("counter").textContent = workleft;
+		allbtnDisable(false);
+	} else {
+		document.getElementById("counter").textContent = "DONE!";
+		stop();
+	}
+}
+function stop() {
+	document.getElementById("solvers").style.visibility = "";
+	document.getElementById("btnClean").disabled = true;
+	allbtnDisable(null);
+
+	document.getElementById("btnPlay").disabled = true;
+	document.getElementById("btnPlay").textContent = "PLAY";
+	document.getElementById("btnStep").disabled = true;
+	running = false;
+}
+
+
+function deadend_depth(cell,max=-1) {
+	// returns how deep a cell's deadend is, up to a maximum of "max" deep. Note: this assumes it _is_ a deadend. Weird results if it's not.
+	let depth = 0;
+	let neighs = inMaze.get(cell);
+	while (1) {
+		let old = cell;
+		cell = [...neighs][0];
+		neighs = [...inMaze.get(cell)].filter(c => c!==old);
+		depth++;
+		if (neighs.length !== 1 || depth===max) return depth;
+	}
+}
+function analyze() {
+	if (document.getElementById("analysis").style.display === "") {
+		document.getElementById("analysis").style.display = "none";
+		return;
+	}
+
+	const maxDepth = 10;
+	let deadend=0, straight=0, turn=0, junction=0, crossroad=0, strH=0, strV=0, deadDepth=new Array(maxDepth+1).fill(0);
+	inMaze.forEach((neighbors,cell) => {
+		switch (neighbors.size) {
+			case 1:
+				deadend++;
+				deadDepth[ deadend_depth(cell,maxDepth) ]++;
+				break;
+			case 2:
+				let here = [...neighbors];
+				if ( Math.max( Math.abs(here[0][0]-here[1][0]), Math.abs(here[0][1]-here[1][1]) ) === 1 ) {
+					turn++;
+				} else {
+					straight++;
+					if (here[0][0] === here[1][0])
+						strV++;
+					else
+						strH++;
+				}
+				break;
+			case 3:
+				junction++;
+				break;
+			case 4:
+				crossroad++;
+				break;
+		}
+	});
+
+	let writeRow = (name, amount, total=null) => {
+		if (total === null) total = xx*yy;
+		let percent = (100*amount/total).toFixed(2);
+		return "<tr><td>"+name+":</td><td><b>"+amount+"</b></td><td>"+percent+"%</td></tr>";
+	}
+
+	let result = "<table>";
+	result += "<tr><td><b><u>ANALYSIS RESULTS</u></b></td></tr>";
+	result += "<tr><td>&nbsp;</td></tr>";
+	result += writeRow("Dead ends", deadend);
+	result += writeRow("Turns", turn);
+	result += writeRow("Straights", straight);
+	result += writeRow("Junctions", junction);
+	result += writeRow("Crossroads", crossroad);
+	if (deadend) {
+		while (deadDepth[deadDepth.length-1] === 0) deadDepth.pop();
+
+		result += "<tr><td colspan=3><hr></td></tr>";
+		result += "<tr><td><b>DEAD ENDS</b></td></tr>";
+		for (let d=1; d<deadDepth.length-1; d++)
+			result += writeRow("Depth "+d, deadDepth[d], deadend);
+		if (deadDepth.length>maxDepth)
+			result += writeRow("Depth "+maxDepth+"+", deadDepth[maxDepth], deadend);
+	}
+	if (straight) {
+		result += "<tr><td colspan=3><hr></td></tr>";
+		result += "<tr><td><b>STRAIGHTS</b></td></tr>";
+		result += writeRow("Horizontal", strH, straight);
+		result += writeRow("Vertical", strV, straight);
+	}
+	result += "</table>";
+
+	document.getElementById("analysis").innerHTML = result;
+	document.getElementById("analysis").style.display = "";
+}
+
+function xroad() {
+	document.getElementById("btnClean").disabled = false;
+
+	ctx.fillStyle = document.getElementById("colXros").value;
+	inMaze.forEach((neighbors,cell) => {
+		if (neighbors.size === 4) {
+			drawBridge( Point(cell[0]-1,cell[1]), Point(cell[0]+1,cell[1]), false );
+			drawBridge( Point(cell[0],cell[1]-1), Point(cell[0],cell[1]+1), false );
+		}
+	});
+}
+function deadend() {
+	document.getElementById("btnClean").disabled = false;
+
+	ctx.fillStyle = document.getElementById("colDead").value;
+	inMaze.forEach((neighbors,cell) => {
+		if (neighbors.size === 1)
+			drawBridge( cell,cell, false );
+	});
+}
+function solve() {
+	let points = [...exits];
+	if (!points.length) return;
+
+	document.getElementById("btnClean").disabled = false;
+	ctx.fillStyle = document.getElementById("colSolv").value;
+
+	points = points.map(p => exit2point(p));
+
+	let me = points.pop();
+	if (!points.length) {
+		drawBridge(me,me,false);
+		return;
+	}
+
+	let finish = new Set(points);
+	let neighs = [...inMaze.get(me)];
+	let path = []; // each element has: node, and array of unvisited neighbors
+	while (1) {
+		if (!neighs.length) {
+			if (!path.length) break;
+			[me,neighs] = path.pop();
+			continue;
+		}
+		let newme = neighs.pop();
+		path.push([me, neighs]);
+		neighs = [...inMaze.get(newme)].filter(c => c !== me);
+		me = newme;
+
+		if (finish.has(me)) {
+			path.push([me]);
+			for (let i=0; i<path.length-1; i++) {
+				drawBridge(path[i][0],path[i+1][0],false);
+			}
+			path.pop();
+
+			finish.delete(me);
+			if (!finish.size) break;
+		}
+	}
+}
+function gradient() {
+	let points = [...exits];
+	if (!points.length) return;
+
+	document.getElementById("btnClean").disabled = false;
+
+	points = points.map(p => exit2point(p));
+
+	let visited = [ new Set ];
+	if (points.length === 1 || document.getElementById("gradFrom").value === "E") {
+		// spread from exits
+		points.forEach( c => visited[0].add(c) );
+	} else {
+		// spread from solution path
+		let me = points.pop();
+		let allPath = new Set([me]);
+
+		let finish = new Set(points);
+		let neighs = [...inMaze.get(me)];
+		let path = []; // each element has: node, and array of unvisited neighbors
+		while (1) {
+			if (!neighs.length) {
+				if (!path.length) break;
+				[me,neighs] = path.pop();
+				continue;
+			}
+			let newme = neighs.pop();
+			path.push([me, neighs]);
+			neighs = [...inMaze.get(newme)].filter(c => c !== me);
+			me = newme;
+
+			if (finish.has(me)) {
+				path.push([me]);
+				for (let i=0; i<path.length; i++)
+					allPath.add(path[i][0]);
+				path.pop();
+
+				finish.delete(me);
+				if (!finish.size) break;
+			}
+		}
+		[...allPath].forEach( c => visited[0].add(c) );
+	}
+
+	let distance = 0;
+	while (1) {
+		let neo = new Set;
+		visited[distance].forEach(c => {
+			[...inMaze.get(c)]
+				.filter( n => !visited[distance].has(n) && (!distance || !visited[distance-1].has(n)) )
+				.forEach( n => neo.add(n) );
+		});
+		if (!neo.size) break;
+		distance++;
+		visited[distance] = neo;
+	}
+
+	if (!distance) distance=1;
+	for (let d=visited.length-1; d>=0; d--) {
+		ctx.fillStyle = color_gradient(d,distance);
+		visited[d].forEach(c => {
+			if (!d) drawBridge(c,c,false);
+			[...inMaze.get(c)].forEach(n => {
+				if ( !visited[d+1] || !visited[d+1].has(n) )
+					drawBridge(c,n,false); // not downwards
+			});
+		});
+	}
+}
+function clean() {
+	document.getElementById("btnClean").disabled = true;
+
+	canvas.width = xx*SIZECELL + (xx+1)*SIZEWALL;
+	canvas.height = yy*SIZECELL + (yy+1)*SIZEWALL;
+	ctx.fillStyle = document.getElementById("colWall").value;
+	ctx.fillRect(0,0,canvas.width,canvas.height);
+
+	ctx.fillStyle = document.getElementById("colPath").value;
+	inMaze.forEach((neighbors,cell) => {
+		[...neighbors].forEach(v => {
+			if (v[0]<cell[0] || v[1]<cell[1])
+				drawBridge(cell,v,false)
+		});
+	});
+}
+
+
+window.onload = function() {
+	setWidth1();
+	setHeight1();
+	setSizeN1();
+	setSizeW1();
+	setSpeed1();
+	setRun1();
+	setBias1();
+	setGrow1();
+	setKeep1();
+	setNoX1();
+	setHch1();
+	setVch1();
+	setChoose();
+	setOrdering();
+	setCut();
+	setCwhere();
+	setWork();
+	setSame(true);
+	setMethod();
+	setExits();
+	setGamma1();
+	setSteps();
+	set_gradient_colors();
+	[...document.getElementsByTagName("legend")].forEach(obj => {
+		obj.onclick = e => {
+			if (e.target.nextElementSibling.style.visibility === "hidden") {
+				e.target.nextElementSibling.style.visibility = "";
+				e.target.parentNode.style.height = "";
+			} else {
+				e.target.nextElementSibling.style.visibility = "hidden";
+				e.target.parentNode.style.height = "0";
+			}
+		}
+	});
+}
+
+</script>
+</body></html>
