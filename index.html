@@ -6,7 +6,7 @@
 		fieldset {display:block;margin:0 0 .5em; border:2px groove #999;background:#999; padding:0 .3em .3em}
 		legend {font-size:80%; padding:0 .5em; background:#aaa; border:2px groove #999; cursor:pointer}
 		table {display:inline-table;border-collapse:collapse}
-		button {padding:.2em 2em}
+		button {padding:.2em 1.2em}
 		.exits td {width:15px;height:15px;padding:0}
 		.exits td input {margin:0;display:block}
 		.exits td:nth-child(2n) {width:40px}
@@ -272,6 +272,13 @@
 			<button onclick="xroad()">X-ROADS</button>
 			<button onclick="solve()" id="btnSolve">SOLUTIONS</button>
 			<button onclick="clean()" id="btnClean">CLEAR</button>
+			<button onclick="mod()" id="btnMods">MOD</button>
+		</div>
+		<div id="modders" style="display:none">
+			Chance:<input id="modChance" type="number" min="1" max="1000" value="100" style="width:4em" required>&#8240;
+			<button onclick="Usquare()">U-&gt;&#x25A1</button>
+			<button onclick="remDead()">-DeadEnd</button>
+			<button onclick="addLoop()">+Loop</button>
 		</div>
 	</div>
 
@@ -959,18 +966,18 @@ function drawBridge(cell1,cell2, add=true) {
 	let [minX,sizeX] = (cell1[0]>cell2[0]) ? [cell2[0],cell1[0]-cell2[0]] : [cell1[0],cell2[0]-cell1[0]];
 	let [minY,sizeY] = (cell1[1]>cell2[1]) ? [cell2[1],cell1[1]-cell2[1]] : [cell1[1],cell2[1]-cell1[1]];
 	ctx.fillRect( minX*(SIZEWALL+SIZECELL)-SIZECELL, minY*(SIZEWALL+SIZECELL)-SIZECELL, sizeX*(SIZEWALL+SIZECELL)+SIZECELL, sizeY*(SIZEWALL+SIZECELL)+SIZECELL );
+	if (add) setBridge(cell1,cell2);
+}
+function setBridge(cell1,cell2) {
+	if (inMaze.has(cell1))
+		inMaze.get(cell1).add(cell2);
+	else
+		inMaze.set(cell1, new Set([cell2]));
 
-	if (add) {
-		if (inMaze.has(cell1))
-			inMaze.get(cell1).add(cell2);
-		else
-			inMaze.set(cell1, new Set([cell2]));
-
-		if (inMaze.has(cell2))
-			inMaze.get(cell2).add(cell1);
-		else
-			inMaze.set(cell2, new Set([cell1]));
-	}
+	if (inMaze.has(cell2))
+		inMaze.get(cell2).add(cell1);
+	else
+		inMaze.set(cell2, new Set([cell1]));
 }
 function drawSquare(cell1,cell2) {
 	let [minX,sizeX] = (cell1[0]>cell2[0]) ? [cell2[0],cell1[0]-cell2[0]] : [cell1[0],cell2[0]-cell1[0]];
@@ -1979,6 +1986,8 @@ function allbtnDisable(val) {
 
 function zero() {
 	document.getElementById("solvers").style.visibility = "hidden";
+	document.getElementById("solvers").style.display = "";
+	document.getElementById("modders").style.display = "none";
 	document.getElementById("analysis").style.display = "none";
 	running = false;
 	drawSize();
@@ -2272,6 +2281,16 @@ function clean() {
 				drawBridge(cell,v,false)
 		});
 	});
+
+	if (document.getElementById("modders").style.display === "") {
+		for (let y=1; y<yy; y++) for (let x=1; x<xx; x++) {
+			if ( !inMaze.get( Point(x,y) ).has( Point(x,y+1) ) ) continue;
+			if ( !inMaze.get( Point(x,y) ).has( Point(x+1,y) ) ) continue;
+			if ( !inMaze.get( Point(x+1,y+1) ).has( Point(x,y+1) ) ) continue;
+			if ( !inMaze.get( Point(x+1,y+1) ).has( Point(x+1,y) ) ) continue;
+			drawBridge(Point(x,y), Point(x+1,y+1), false);
+		}
+	}
 }
 
 
@@ -2310,6 +2329,88 @@ window.onload = function() {
 			}
 		}
 	});
+
+	let url = new URL(window.location.href);
+	let c = url.searchParams.get("test");
+	if (c === null)
+		document.getElementById("btnMods").style.display = "none";
+}
+
+function mod() {
+	document.getElementById("analysis").style.display = "none";
+	document.getElementById("solvers").style.display = "none";
+	document.getElementById("modders").style.display = "";
+	clean();
+}
+function getModChance() {
+	let obj = document.getElementById("modChance");
+	if (!obj.checkValidity()) obj.value = 100;
+	return +obj.value;
+}
+function Usquare() {
+	// looks for 2x2 squares with one connection missing, and adds it
+	let found = [];
+	let chance = getModChance();
+	for (let y=1; y<yy; y++) for (let x=1; x<xx; x++) {
+		let n=0;
+		n += +inMaze.get( Point(x,y) ).has( Point(x,y+1) );
+		n += +inMaze.get( Point(x,y) ).has( Point(x+1,y) );
+		n += +inMaze.get( Point(x+1,y+1) ).has( Point(x,y+1) );
+		n += +inMaze.get( Point(x+1,y+1) ).has( Point(x+1,y) );
+		if (n === 3 && Rand(1000)<chance) found.push([x,y]);
+	}
+	found.forEach(([x,y]) => {
+		setBridge( Point(x,y), Point(x,y+1) );
+		setBridge( Point(x,y), Point(x+1,y) );
+		setBridge( Point(x+1,y+1), Point(x,y+1) );
+		setBridge( Point(x+1,y+1), Point(x+1,y) );
+	});
+
+	clean();
+	document.getElementById("counter").textContent = found.length ? (found.length+" changes") : "NO CHANGES";
+}
+function remDead() {
+	let found = [];
+	let chance = getModChance();
+	for (let y=1; y<=yy; y++) for (let x=1; x<=xx; x++) {
+		let P = Point(x,y);
+		if (inMaze.get(P).size === 1 && Rand(1000)<chance) found.push(P);
+	}
+	found.forEach(P => {
+		let n = [...inMaze.get(P)][0];
+		if (!n) return; // in case of 'maze fully destroyed'
+
+		inMaze.get(P).delete(n);
+		inMaze.get(n).delete(P);
+	});
+
+	clean();
+	document.getElementById("counter").textContent = found.length ? (found.length+" changes") : "NO CHANGES";
+}
+function addLoop() {
+	let chance = getModChance();
+	let counter = 0;
+	for (let y=1; y<=yy; y++) for (let x=1; x<=xx; x++) {
+		let cell = Point(x,y);
+		if ( !inMaze.get(cell).size ) continue;
+		if ( x<xx ) {
+			let neigh = Point(x+1,y);
+			if ( !inMaze.get(cell).has(neigh) && inMaze.get(neigh).size>0 && Rand(1000)<chance ) {
+				setBridge(cell, neigh);
+				counter++;
+			}
+		}
+		if ( y<yy ) {
+			let neigh = Point(x,y+1);
+			if ( !inMaze.get(cell).has(neigh) && inMaze.get(neigh).size>0 && Rand(1000)<chance ) {
+				setBridge(cell, neigh);
+				counter++;
+			}
+		}
+	}
+
+	clean();
+	document.getElementById("counter").textContent = counter ? (counter+" changes") : "NO CHANGES";
 }
 
 </script>
